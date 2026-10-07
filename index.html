@@ -8,12 +8,25 @@
   body { font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 16px; background:#f5f5f3; }
   h1 { font-size: 18px; }
   button { padding: 12px 16px; font-size: 14px; border-radius: 8px; border: 1px solid #ccc; margin: 6px 0; width: 100%; cursor: pointer; }
-  #btnCargar, #btnSiguiente, #btnIniciarCamara, #btnGuardarNuevoUsuario { background:#0c447c; color:white; border:none; }
-  #btnNuevoUsuario, #btnCancelarNuevoUsuario, #btnBuscarDocumento, #btnCancelarBusqueda { background:#5a4a9e; color:white; border:none; }
-  #btnEjecutarBusqueda { background:#0c447c; color:white; border:none; }
+
+  /* Caja 1: cargar el archivo del evento */
+  #paso-carga { background:white; border:1px solid #ddd; border-radius:8px; padding:16px; margin-top:12px; }
+  #btnCargar { background:#1a7a3c; color:white; border:none; }
+
+  /* Línea divisoria entre cajas */
+  .separador { border:none; border-top:2px solid #ddd; margin:20px 0; }
+
+  /* Caja 2: registrar nuevo usuario + buscar por documento */
+  #acciones-registro { background:#eef0f4; border:1px solid #ddd; border-radius:8px; padding:16px; }
+  #btnNuevoUsuario, #btnGuardarNuevoUsuario { background:#0c447c; color:white; border:none; } /* azul */
+  #btnBuscarDocumento, #btnEjecutarBusqueda { background:#5a4a9e; color:white; border:none; } /* morado */
+  #btnCancelarNuevoUsuario, #btnCancelarBusqueda { background:#888; color:white; border:none; } /* gris, para cancelar */
   #form-nuevo-usuario, #form-buscar-documento { background:white; border:1px solid #ddd; border-radius:8px; padding:16px; margin-top:8px; }
   #form-nuevo-usuario label, #form-buscar-documento label { display:block; font-size:13px; color:#555; margin-top:8px; }
   #form-nuevo-usuario input, #form-buscar-documento input { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
+
+  #btnSiguiente { background:#0c447c; color:white; border:none; }
+  #btnIniciarCamara { background:#1a7a3c; color:white; border:none; } /* verde */
   #btnEntregada { background:#1a7a3c; color:white; border:none; }
   #btnNoEntregada { background:#a15c00; color:white; border:none; }
   #btnBorrar { background:#791f1f; color:white; border:none; }
@@ -23,6 +36,7 @@
   #resultado .manilla { font-weight:bold; font-size: 16px; }
   #aviso-duplicado { background:#fff3cd; border:1px solid #e0a800; padding:12px; border-radius:8px; margin-top:12px; display:none; }
   #reader { width: 100%; margin-top: 12px; }
+  #paso-escaneo { background:white; border:1px solid #ddd; border-radius:8px; padding:16px; margin-top:16px; }
   #controles-finales { margin-top: 20px; border-top: 1px solid #ddd; padding-top: 12px; }
   input[type=file] { width: 100%; margin-bottom: 8px; }
 </style>
@@ -39,32 +53,38 @@
   <button id="btnCargar">Cargar datos del evento</button>
 </div>
 
+<hr class="separador">
+
 <!-- ACCIONES SIEMPRE DISPONIBLES: no dependen de haber cargado el json -->
-<button id="btnNuevoUsuario">➕ Registrar nuevo usuario (sin QR previo)</button>
+<div id="acciones-registro">
+  <button id="btnNuevoUsuario">➕ Registrar nuevo usuario (sin QR previo)</button>
 
-<div id="form-nuevo-usuario" style="display:none;">
-  <label>Nombre</label>
-  <input type="text" id="nu-nombre">
-  <label>Tipo de documento</label>
-  <input type="text" id="nu-tipodoc">
-  <label>Número de documento</label>
-  <input type="text" id="nu-numdoc">
-  <label>Color de manilla</label>
-  <input type="text" id="nu-manilla">
-  <label>Especificaciones del equipo</label>
-  <input type="text" id="nu-especificaciones">
-  <button id="btnGuardarNuevoUsuario">Guardar y continuar</button>
-  <button id="btnCancelarNuevoUsuario">Cancelar</button>
+  <div id="form-nuevo-usuario" style="display:none;">
+    <label>Nombre</label>
+    <input type="text" id="nu-nombre">
+    <label>Tipo de documento</label>
+    <input type="text" id="nu-tipodoc">
+    <label>Número de documento</label>
+    <input type="text" id="nu-numdoc">
+    <label>Color de manilla</label>
+    <input type="text" id="nu-manilla">
+    <label>Especificaciones del equipo</label>
+    <input type="text" id="nu-especificaciones">
+    <button id="btnGuardarNuevoUsuario">Guardar y continuar</button>
+    <button id="btnCancelarNuevoUsuario">Cancelar</button>
+  </div>
+
+  <button id="btnBuscarDocumento">🔍 Buscar por número de documento</button>
+
+  <div id="form-buscar-documento" style="display:none;">
+    <label>Número de documento</label>
+    <input type="text" id="bd-numdoc">
+    <button id="btnEjecutarBusqueda">Buscar</button>
+    <button id="btnCancelarBusqueda">Cancelar</button>
+  </div>
 </div>
 
-<button id="btnBuscarDocumento">🔍 Buscar por número de documento</button>
-
-<div id="form-buscar-documento" style="display:none;">
-  <label>Número de documento</label>
-  <input type="text" id="bd-numdoc">
-  <button id="btnEjecutarBusqueda">Buscar</button>
-  <button id="btnCancelarBusqueda">Cancelar</button>
-</div>
+<hr class="separador">
 
 <div id="aviso-duplicado"></div>
 
@@ -109,6 +129,20 @@
   }
 
   // ---------- CONFIGURACIÓN ----------
+  // ---------- CONFIGURACIÓN: nombres de columna ----------
+  // Igual que en Apps Script: si cambias el nombre de una columna en tu
+  // Excel, solo cambias el texto aquí, en un solo lugar, y el resto del
+  // código de abajo se ajusta solo (no hay que buscar línea por línea).
+  // IMPORTANTE: estos nombres deben ser EXACTAMENTE los mismos que pusiste
+  // en Apps Script (COL_NOMBRE, COL_DOCUMENTO, COL_MANILLA, etc.), porque
+  // así es como se llaman las columnas dentro del archivo JSON que se generó.
+
+  const COL_NOMBRE = "Nombre";
+  const COL_TIPODOC = "tipo de documento";
+  const COL_DOCUMENTO = "numero de documento";
+  const COL_MANILLA = "Color de manilla";
+  const COL_ESPECIFICACIONES = "especificaciones del equipo";
+
   const HORAS_EXPIRACION = 56; // borrado automático pasadas 56h de cargar los datos
   let scanner = null;
   let codigoActual = null; // guarda qué código se acaba de escanear, mientras se decide
@@ -197,21 +231,8 @@
   function manejarEscaneo(codigo) {
     scanner.pause(); // pausamos para no leer el mismo QR 20 veces por segundo
 
-    const yaIngreso = buscarIngresoPrevio(codigo);
-    if (yaIngreso) {
-      // Ya había entrado antes: avisamos y no dejamos registrar de nuevo
-      document.getElementById("aviso-duplicado").style.display = "block";
-      document.getElementById("aviso-duplicado").textContent =
-        `⚠️ Este código ya ingresó el ${yaIngreso.hora} (manilla: ${yaIngreso.manilla_entregada ? "sí entregada" : "no entregada"}).`;
-      document.getElementById("resultado").style.display = "none";
-      document.getElementById("btnSiguiente").style.display = "block";
-      return;
-    }
-
     const datos = JSON.parse(localStorage.getItem("evento_lookup"));
     const persona = datos[codigo];
-
-    document.getElementById("aviso-duplicado").style.display = "none";
 
     if (!persona) {
       alert("Código no encontrado en los datos del evento. Verifica el QR.");
@@ -219,7 +240,9 @@
       return;
     }
 
-    // Revisamos y mostramos, con la misma lógica que usa la búsqueda por documento
+    // Revisa si ya había ingresado antes, y muestra sus datos — todo
+    // centralizado en una sola función compartida (también la usa la
+    // búsqueda por documento), para no repetir la misma lógica dos veces.
     procesarPersonaEncontrada(codigo, persona);
   }
 
@@ -243,11 +266,11 @@
   // La usan tanto el escaneo de QR como el registro manual de usuario nuevo.
   function mostrarPersonaParaConfirmar(codigo, persona) {
     codigoActual = codigo;
-    document.getElementById("res-manilla").textContent = "Manilla: " + persona["Color de manilla"];
-    document.getElementById("res-nombre").textContent = persona["Nombre"];
-    document.getElementById("res-tipodoc").textContent = persona["tipo de documento"];
-    document.getElementById("res-numdoc").textContent = persona["numero de documento"];
-    document.getElementById("res-especificaciones").textContent = persona["especificaciones del equipo"];
+    document.getElementById("res-manilla").textContent = "Manilla: " + persona[COL_MANILLA];
+    document.getElementById("res-nombre").textContent = persona[COL_NOMBRE];
+    document.getElementById("res-tipodoc").textContent = persona[COL_TIPODOC];
+    document.getElementById("res-numdoc").textContent = persona[COL_DOCUMENTO];
+    document.getElementById("res-especificaciones").textContent = persona[COL_ESPECIFICACIONES];
     document.getElementById("resultado").style.display = "block";
   }
 
@@ -279,7 +302,7 @@
     const claveNueva = nombre.toLowerCase() + "||" + numdoc;
     const yaExiste = Object.keys(datos).some((codigoExistente) => {
       const p = datos[codigoExistente];
-      const claveExistente = String(p["Nombre"] || "").toLowerCase().trim() + "||" + String(p["numero de documento"] || "").trim();
+      const claveExistente = String(p[COL_NOMBRE] || "").toLowerCase().trim() + "||" + String(p[COL_DOCUMENTO] || "").trim();
       return claveExistente === claveNueva;
     });
 
@@ -292,11 +315,11 @@
     const codigoNuevo = "MANUAL-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
 
     const persona = {
-      "Nombre": nombre,
-      "tipo de documento": tipodoc,
-      "numero de documento": numdoc,
-      "Color de manilla": manilla,
-      "especificaciones del equipo": especificaciones
+      [COL_NOMBRE]: nombre,
+      [COL_TIPODOC]: tipodoc,
+      [COL_DOCUMENTO]: numdoc,
+      [COL_MANILLA]: manilla,
+      [COL_ESPECIFICACIONES]: especificaciones
     };
 
     // Lo agregamos a los mismos datos del evento guardados en el celular,
@@ -338,7 +361,7 @@
     let codigoEncontrado = null;
     let personaEncontrada = null;
     for (const codigo in datos) {
-      if (String(datos[codigo]["numero de documento"] || "").trim() === numdocBuscado) {
+      if (String(datos[codigo][COL_DOCUMENTO] || "").trim() === numdocBuscado) {
         codigoEncontrado = codigo;
         personaEncontrada = datos[codigo];
         break;
@@ -364,7 +387,7 @@
     const registro = JSON.parse(localStorage.getItem("ingresos_registrados") || "[]");
     registro.push({
       codigo: codigoActual,
-      nombre: persona["Nombre"],
+      nombre: persona[COL_NOMBRE],
       hora: new Date().toLocaleString(),
       manilla_entregada: entregada
     });
@@ -400,10 +423,14 @@
       return false;
     }
 
-    // Armamos un texto tipo CSV: primero los encabezados, luego una línea por registro
-    let csv = "codigo,nombre,hora,manilla_entregada\n";
+    // Armamos un texto tipo CSV: usamos punto y coma como separador (no coma),
+    // porque es lo que espera Excel configurado en español. La primera línea
+    // "sep=;" es una pista especial que Excel reconoce automáticamente al
+    // abrir el archivo, para usar el separador correcto sin que el usuario
+    // tenga que configurar nada manualmente.
+    let csv = "sep=;\ncodigo;nombre;hora;manilla_entregada\n";
     registro.forEach((r) => {
-      csv += `${r.codigo},"${r.nombre}",${r.hora},${r.manilla_entregada ? "si" : "no"}\n`;
+      csv += `${r.codigo};"${r.nombre}";${r.hora};${r.manilla_entregada ? "si" : "no"}\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -454,4 +481,4 @@
 </body>
 </html>
 
-//Version 23/09/26 cambios en agregar nuevo usuario
+//VErsion 06/10/26 cambios en agregar nuevo usuario
